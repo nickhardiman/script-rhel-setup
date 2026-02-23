@@ -1,0 +1,28 @@
+=== install dependencies
+
+Script
+https://raw.githubusercontent.com/nickhardiman/ansible-playbook-lab/main/machine-hypervisor.sh[machine-hypervisor.sh]
+sets up everything on a freshly installed host.
+This works with RHEL and Fedora.
+Some things, like that "dnf install" line, won't work on other OSs.
+
+* Log into the hypervisor machine.
+* Download the script.
+
+[source,shell]
+....
+curl -O https://raw.githubusercontent.com/nickhardiman/script-rhel-setup/main/rhel-setup.sh
+....
+
+* Read the script and follow the instructions.
+
+
+The script creates a new user named _ansible_user_
+along with a key pair named _ansible-key.priv_ and _ansible-key.pub_
+and sudoers privilege escalation.
+The playbook uses _ansible_user_ to connect to all the machines,
+
+The script also clones the playbook repo and installs dependencies.
+
+
+
