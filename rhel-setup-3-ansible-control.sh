@@ -93,6 +93,22 @@ install_ansible_on_control() {
 }
 
 
+setup_git_on_control () {
+    log_this "install and configure git on $CONTROL_NODE_NAME"
+    cp $CONTROL_HOME/.gitconfig $CONTROL_WORK_DIR/gitconfig-before-$CONTROL_NODE_NAME
+    sudo dnf install --assumeyes git
+    git config --global user.name         "$GIT_NAME"
+    git config --global user.email        $GIT_EMAIL
+    git config --global github.user       $GIT_USER
+    git config --global push.default      simple
+    # default timeout is 900 seconds (https://git-scm.com/docs/git-credential-cache)
+    git config --global credential.helper 'cache --timeout=1200'
+    git config --global pull.rebase false
+    # check 
+    git config --global --list
+}
+
+
 # I'm not using ansible-galaxy because I make frequent changes.
 # Check out the directive in ansible.cfg in some playbooks.
 # If the repo has already been cloned, git exits with this error message. 
