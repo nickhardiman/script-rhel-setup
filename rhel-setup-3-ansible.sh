@@ -89,7 +89,7 @@ install_ansible_on_control() {
         sudo dnf install --assumeyes ansible-core rhel-system-roles
     elif [[ "$PRETTY_NAME" =~ 'Fedora' ]]
     then
-        sudo dnf install --assumeyes ansible-core linux-system-roles
+        sudo dnf install --assumeyes ansible-core linux-system-roles python3-ansible-lint
     fi
 }
 
