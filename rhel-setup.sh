@@ -85,7 +85,7 @@
 #-------------------------
 # Variables
 #
-CONFIG_FILE=./rhel-setup.cfg
+CONFIG_FILE=~/rhel-setup.cfg
 source $CONFIG_FILE
 #
 #-------------------------
@@ -147,14 +147,13 @@ download_from_repo() {
 # !!! reboot breaks flow
 reboot_managed () {
     log_this "reboot $MANAGED_NODE_FQDN"
-        sudo dnf needs-restarting
-        # tracer
-        RET_TRACER=$?
-        if [ $RET_TRACER -eq 104 ]
-        then
-            sudo systemctl reboot
-        fi
-    done
+    sudo dnf needs-restarting
+    # tracer
+    RET_TRACER=$?
+    if [ $RET_TRACER -eq 104 ]
+    then
+        sudo systemctl reboot
+    fi
 }
 
 
@@ -172,9 +171,8 @@ TEST=1      # 0=safe, 1=dangerous
 SCRIPTS=" \
   rhel-setup-1-ssh-sudo.sh \
   rhel-setup-2-os.sh \
-  rhel-setup-3-ansible-control.sh \
+  rhel-setup-3-ansible.sh \
   rhel-setup-4-ansible-vault.sh \
-  rhel-setup-5-ansible-managed.sh \
 "
 
 read_cli_options "$@"

@@ -10,7 +10,7 @@
 #-------------------------
 # Variables
 #
-CONFIG_FILE=./rhel-setup.cfg
+CONFIG_FILE=~/rhel-setup.cfg
 source $CONFIG_FILE
 #
 #-------------------------
@@ -38,23 +38,6 @@ register_managed_with_RH () {
             sudo rhc connect --username="$RHSM_USER" --password="$RHSM_PASSWORD"
 EOF
     fi
-}
-
-
-# SSH - worse security
-# add root keys so root can log in remotely
-root_login_to_managed () {
-    log_this "allow remote root login on $MANAGED_NODE_FQDN"
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo cp $MANAGED_HOME/.ssh/authorized_keys /root/.ssh/authorized_keys
-}
-
-
-# SSH - better security
-# Use key-based login only, disable password login
-# For more information, run 'man sshd_config'
-restrict_ssh_auth_on_managed () {
-    log_this "restrict SSH authentication to key only on $MANAGED_NODE_FQDN"
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF 'AuthenticationMethods publickey' /etc/ssh/sshd_config  || echo 'AuthenticationMethods publickey' | sudo tee -a /etc/ssh/sshd_config"
 }
 
 
@@ -161,12 +144,12 @@ log_this () {
 #-------------------------
 # main
 
+# connection work from control node to managed node is done 
+# except for the Ansible user.
 cd $CONTROL_WORK_DIR || exit 1  
 register_managed_with_RH
 setup_git_on_managed
 setup_ca_certificate_on_control
 push_ca_certificate_to_managed
-root_login_to_managed
-restrict_ssh_auth_on_managed
 install_troubleshooting_packages_on_managed
 update_packages_on_managed

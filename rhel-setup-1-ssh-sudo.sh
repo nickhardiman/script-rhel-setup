@@ -10,7 +10,7 @@
 #-------------------------
 # Variables
 #
-CONFIG_FILE=./rhel-setup.cfg
+CONFIG_FILE=~/rhel-setup.cfg
 source $CONFIG_FILE
 #
 #-------------------------
@@ -123,6 +123,23 @@ create_managed_working_directory () {
 }
 
 
+# SSH - worse security
+# add root keys so root can log in remotely
+root_login_to_managed () {
+    log_this "allow remote root login on $MANAGED_NODE_FQDN"
+    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo cp $MANAGED_HOME/.ssh/authorized_keys /root/.ssh/authorized_keys
+}
+
+
+# SSH - better security
+# Use key-based login only, disable password login
+# For more information, run 'man sshd_config'
+restrict_ssh_auth_on_managed () {
+    log_this "restrict SSH authentication to key only on $MANAGED_NODE_FQDN"
+    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF 'AuthenticationMethods publickey' /etc/ssh/sshd_config  || echo 'AuthenticationMethods publickey' | sudo tee -a /etc/ssh/sshd_config"
+}
+
+
 log_this () {
     echo
     echo -n $(date)
@@ -132,6 +149,7 @@ log_this () {
 #-------------------------
 # main
 
+# at first, we login using the IPv4 address
 # on control node
 create_control_working_directory
 create_control_rsa_keys  
@@ -140,8 +158,10 @@ create_managed_working_directory
 trust_managed_host_key_and_ip
 push_rsa_pubkey
 push_passwordless_sudo
-# host name
+# after some config, we can login using the FQDN
 update_control_hosts_file
 trust_managed_host_key_and_name
 set_managed_hostname
 change_managed_prompt
+root_login_to_managed
+restrict_ssh_auth_on_managed

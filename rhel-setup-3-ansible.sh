@@ -10,7 +10,7 @@
 #-------------------------
 # Variables
 #
-CONFIG_FILE=./rhel-setup.cfg
+CONFIG_FILE=~/rhel-setup.cfg
 source $CONFIG_FILE
 #
 #-------------------------
@@ -32,6 +32,7 @@ setup_control_ansible_user_account() {
     log_this "add an Ansible user account"
     sudo useradd $CONTROL_ANSIBLE_NAME
 }
+
 
 setup_managed_ansible_user_account() {
     log_this "add an Ansible user account"
