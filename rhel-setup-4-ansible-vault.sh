@@ -17,7 +17,7 @@ source $CONFIG_FILE
 # functions
 #
 
-create_vault () {
+create_vault_on_control () {
      # Create a new vault file.
      echo "$VAULT_PASSWORD" > $VAULT_PASSWORD_FILE
      echo <<EOF> $VAULT_FILE
@@ -107,6 +107,6 @@ log_this () {
 # main
 
 cd $CONTROL_WORK_DIR || exit 1
-create_vault
+create_vault_on_control
 set_more_vault_secrets
 add_secrets_to_vault

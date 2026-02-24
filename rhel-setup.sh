@@ -136,9 +136,10 @@ read_cli_options() {
 }
 
 download_from_repo() {
-    log_this "download $1 from Github"
-    curl --silent --fail -remote-name https://raw.githubusercontent.com/nickhardiman/script-rhel-setup/main/scripts/$1
-    if [ $? -ne 0 ]; then
+    log_this "download $1 from Github to $(pwd)"
+    curl --silent --fail --remote-name https://raw.githubusercontent.com/nickhardiman/script-rhel-setup/main/$1
+    if [ $? -ne 0 ]
+    then
         log_this "error, failed to download $1 from Github"
         exit 2
     fi
@@ -148,9 +149,7 @@ download_from_repo() {
 reboot_managed () {
     log_this "reboot $MANAGED_NODE_FQDN"
     sudo dnf needs-restarting
-    # tracer
-    RET_TRACER=$?
-    if [ $RET_TRACER -eq 104 ]
+    if [ $? -ne 0 ]
     then
         sudo systemctl reboot
     fi
