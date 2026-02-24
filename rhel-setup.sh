@@ -172,6 +172,7 @@ SCRIPTS=" \
   rhel-setup-2-os.sh \
   rhel-setup-3-ansible.sh \
   rhel-setup-4-ansible-vault.sh \
+  rhel-setup-5-ansible-playbook.sh \
 "
 
 read_cli_options "$@"

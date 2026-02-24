@@ -117,15 +117,16 @@ setup_git_on_control () {
 #
 clone_my_ansible_collections() {
     log_this "get my libvirt, OS and app roles, all bundled into a couple collections"
-    mkdir -p $CONTROL_HOME/ansible/collections/ansible_collections/nick/
-    pushd    $CONTROL_HOME/ansible/collections/ansible_collections/nick/
+    mkdir -p $CONTROL_HOME/ansible/collections/ansible_collections/nickhardiman/
+    pushd    $CONTROL_HOME/ansible/collections/ansible_collections/nickhardiman/
     # !!! when finished, move to requirements.yml 
     #   - git+https://github.com/nickhardiman/ansible-collection-aap2-refarch
     # !!! hacked copy of ansible-collection-platform
     # ansible-collection-aap2-refarch is a temporary copy of ansible-collection-platform
     # git clone https://github.com/nickhardiman/ansible-collection-platform.git platform
     git clone https://github.com/nickhardiman/ansible-collection-aap2-refarch.git platform
-    git clone https://github.com/nickhardiman/ansible-collection-app.git      app
+    git clone https://github.com/nickhardiman/ansible-collection-app.git          app
+    git clone https://github.com/nickhardiman/ansible-collection-libvirt.git      libvirt
     popd
 }
 
@@ -136,7 +137,7 @@ clone_my_playbooks_to_control() {
      mkdir -p $CONTROL_HOME/ansible/playbooks/
      pushd    $CONTROL_HOME/ansible/playbooks/
      git clone https://github.com/nickhardiman/ansible-playbook-aap2-refarch.git aap-refarch
-     # cd ansible-playbook-$LAB_BUILD_NET_SHORT_NAME/
+     git clone https://github.com/nickhardiman/ansible-playbook-rhel-lab.git     rhel-lab
      popd
 }
 
