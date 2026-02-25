@@ -52,8 +52,6 @@ add_secrets_to_vault () {
     log_this "add secrets to $VAULT_FILE"
      ansible-vault decrypt --vault-pass-file $VAULT_PASSWORD_FILE $VAULT_FILE
      cat << EOF >>  $VAULT_FILE
-# misc
-work_dir: $CONTROL_WORK_DIR
 #
 # accounts
 default_password:        "$DEFAULT_PASSWORD"
@@ -80,13 +78,14 @@ ca_fqdn: $CA_FQDN
 ca_private_key: |
 $CA_PRIVATE_KEY_INDENTED
 #
-# network
-site_ip: "$MANAGED_NODE_IP"
-#
 # manifests
 aap_manifest_uuid: "$AAP_MANIFEST_UUID"
 satellite_manifest_uuid: "$SATELLITE_MANIFEST_UUID"
-
+#
+# misc
+site_ip: "$MANAGED_NODE_IP"
+work_dir: $CONTROL_WORK_DIR
+#
 EOF
      # Encrypt the new file. 
      ansible-vault encrypt --vault-pass-file $VAULT_PASSWORD_FILE $VAULT_FILE
