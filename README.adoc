@@ -1,28 +1,111 @@
-=== install dependencies
+= Bash scripts for initial setup of RHEL
 
-Script
-https://raw.githubusercontent.com/nickhardiman/ansible-playbook-lab/main/machine-hypervisor.sh[machine-hypervisor.sh]
-sets up everything on a freshly installed host.
-This works with RHEL and Fedora.
-Some things, like that "dnf install" line, won't work on other OSs.
+== Description
 
-* Log into the hypervisor machine.
-* Download the script.
+Configure a RHEL machine by setting up SSH, sudo, Ansible and other things.
+Run this Bash script on one machine (the control node) to configure another machine (the managed node).
 
-[source,shell]
-....
-curl -O https://raw.githubusercontent.com/nickhardiman/script-rhel-setup/main/rhel-setup.sh
-....
+----
+    control node --> managed node
+----
 
-* Read the script and follow the instructions.
+The control node is probably your local workstation. 
+The managed node is probably a remote machine with a fresh install of the RHEL OS. 
 
-
-The script creates a new user named _ansible_user_
-along with a key pair named _ansible-key.priv_ and _ansible-key.pub_
-and sudoers privilege escalation.
-The playbook uses _ansible_user_ to connect to all the machines,
-
-The script also clones the playbook repo and installs dependencies.
+Find the code on Github here. 
+  https://github.com/nickhardiman/script-rhel-setup
 
 
+== Prerequisites
+
+Install RHEL. A minimal install is fine. 
+Set a root password.
+Create a user with admin privileges (in the wheel group).
+Set a user password.
+Find out what IP address your DHCP server assigned to the host.
+
+== What the script does
+
+Configure a RHEL machine by setting up SSH, sudo, Ansible and other things.
+This script runs on one machine and configures another machine.
+The control node where the script runs is probably your workstation. 
+The managed node that the script configures is a freshly installed RHEL machine.
+
+Code runs on workstation and uses SSH to run many commands on the new RHEL machine. 
+
+----
+    rhel-setup.sh --(SSH)--> many commands
+----
+
+Code creates or adds to these files. 
+
+* control node
+** copy backups to $HOME/$CONTROL_WORK_DIR
+** add remote name and address in /etc/hosts
+** create private key in $HOME/.ssh/id_rsa (if not already there)
+** create public key in $HOME/.ssh/id_rsa.pub
+** add remote host key to $HOME/.ssh/known_hosts
+* managed node
+** Define a new prompt in $HOME/.bashrc
+** Add control's $HOME/.ssh/authorized_keys
+** /etc/sudoers.d/$USER
+
+This bash script runs and pulls in more bash scripts.
+This script and the ones it calls do a whole heap of unsafe things, 
+so this is for home lab dev use only.
+
+Set up a few authentication and authorization things.
+
+* Add key-based SSH login.
+* Add passwordless sudo.
+* Display FQDN in the prompt. By default, only the host name is shown eg. "[nick@host ~]$ ".
+
+The script depends on the usual Bash environment variables
+like $HOME and $USER. 
+For me, the values are:
+
+----
+  HOME=/home/nick
+  USER=nick
+----
+
+Install applications.
+
+* Ansible on the control node
+* KVM hypervisor on the three site hosts
+* supporting services on site3
+
+== Instructions
+
+SSH to the control node.
+Download the Bash script file and its config file from Github to your home directory.
+Run the account as your regular user. 
+Many commands use sudo, so you do need privilege.
+
+----
+curl --fail --remote-name  https://raw.githubusercontent.com/nickhardiman/script-rhel-setup/main/rhel-setup.sh
+curl --fail --remote-name  https://raw.githubusercontent.com/nickhardiman/script-rhel-setup/main/rhel-setup.cfg
+----
+
+Edit rhel-setup.cfg and change my details to yours.
+
+*    Find out what IP addresses your ISP's router assigned to the hosts.
+*    Add the IP adresses.
+
+Run the script. 
+
+----
+    bash rhel-setup.sh    
+----
+
+SSH asks you to confirm host key and enter your password. 
+
+----
+    This key is not known by any other names.
+    Are you sure you want to continue connecting (yes/no/[fingerprint])? 
+    Warning: Permanently added '1.2.3.4' (ED25519) to the list of known hosts.
+    nick@1.2.3.4's password: 
+----
+
+Type in your user password. 
 

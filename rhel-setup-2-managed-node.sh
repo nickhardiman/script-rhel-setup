@@ -2,7 +2,7 @@
 #-------------------------
 # Description
 #
-# Set up a few authentication and authorization things on two machines.
+# Customize RHEL on the managed node
 #     control node --> managed node
 # Find the code on Github here. 
 #   https://github.com/nickhardiman/script-rhel-setup
@@ -16,21 +16,66 @@ source $CONFIG_FILE
 #-------------------------
 # functions
 
-create_control_working_directory () {
-    log_this "create working directory $CONTROL_WORK_DIR"
-    mkdir $CONTROL_WORK_DIR
-    cd $CONTROL_WORK_DIR
+# Enable nested virtualization? 
+# In /etc/modprobe.d/kvm.conf 
+# options kvm_amd nested=1
+
+
+
+
+install_troubleshooting_packages_on_managed () {
+    log_this "install troubleshooting RPM packages on $MANAGED_NODE_FQDN"
+    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo dnf -y install \
+            bash-completion \
+            bind-utils \
+            cockpit \
+            lsof \
+            nmap \
+            nmap-ncat \
+            plocate \
+            vim \
+            tcpdump \
+            telnet \
+            tmux \
+            tree
 }
 
-create_control_rsa_keys () {
-    if [[ -f $CONTROL_HOME/.ssh/id_rsa ]]; then
-        log_this "RSA private key already exists in control $CONTROL_NODE_NAME $CONTROL_HOME/.ssh/id_rsa"
-        return
-    fi
-    log_this "generate control RSA keys for $CONTROL_USER_NAME"
-     ssh-keygen -f $CONTROL_HOME/.ssh/id_rsa -q -N ""
-    cat $CONTROL_HOME/.ssh/id_rsa.pub | tee -a $CONTROL_HOME/.ssh/authorized_keys 
+
+setup_git_on_managed () {
+    log_this "install and configure git on $MANAGED_NODE_FQDN"
+    scp $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_HOME/.gitconfig $CONTROL_WORK_DIR/gitconfig-before-$MANAGED_NODE_FQDN
+    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN << EOF 
+        sudo dnf install --assumeyes git
+        git config --global user.name         "$GIT_NAME"
+        git config --global user.email        $GIT_EMAIL
+        git config --global github.user       $GIT_USER
+        git config --global push.default      simple
+        # default timeout is 900 seconds (https://git-scm.com/docs/git-credential-cache)
+        git config --global credential.helper 'cache --timeout=1200'
+        git config --global pull.rebase false
+        # check 
+        git config --global --list
+EOF
 }
+
+
+
+push_ca_certificate_to_managed () {
+    # !!! copy CA certificate from installer host to all hypervisor host and VM trust stores. 
+    #  * ca.source.example.com-cert.pem
+    for NAME in host.site1.example.com host.site2.example.com host.site3.example.com
+    do
+        scp ./$CA_FQDN-cert.pem $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-cert.pem
+        scp ./$CA_FQDN-key.pem  $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-key.pem
+        ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  << EOF 
+            sudo cp $MANAGED_WORK_DIR/$CA_FQDN-cert.pem /etc/pki/ca-trust/source/anchors/
+            sudo cp $MANAGED_WORK_DIR/$CA_FQDN-key.pem /etc/pki/tls/private/
+            sudo chmod 0700  /etc/pki/tls/private/$CA_FQDN-key.pem
+            sudo update-ca-trust
+EOF
+    done
+}
+
 
 trust_managed_host_key_and_ip () {
     log_this "copy key from $MANAGED_NODE_IP to control $CONTROL_NODE_NAME $CONTROL_HOME/.ssh/known_hosts file"
@@ -62,15 +107,6 @@ push_passwordless_sudo () {
     # clean up
     # rm $CONTROL_TMP_FILE
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP rm $MANAGED_TMP_FILE
-}
-
-update_control_hosts_file () {
-    log_this "add managed $MANAGED_NODE_IP to control $CONTROL_NODE_NAME /etc/hosts file"
-    # get a copy for backup
-    scp $MANAGED_USER_NAME@$MANAGED_NODE_IP:/etc/hosts $CONTROL_WORK_DIR/hosts-$MANAGED_NODE_IP
-    # add lines if not already there
-    LINE="$MANAGED_NODE_IP  $MANAGED_NODE_FQDN"
-    grep -qxF "$LINE" /etc/hosts || echo "$LINE" | sudo tee -a /etc/hosts
 }
 
 trust_managed_host_key_and_name () {
@@ -112,6 +148,7 @@ change_managed_prompt () {
     ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF \"$LINE\" /root/.bashrc  || echo \"$LINE\" | sudo tee -a /root/.bashrc"
 }
 
+
 create_managed_working_directory () {
     log_this "create a working directory $MANAGED_WORK_DIR on managed $MANAGED_NODE_IP"
     ssh -o ConnectTimeout=10 $MANAGED_USER_NAME@$MANAGED_NODE_IP mkdir -p $MANAGED_WORK_DIR
@@ -140,28 +177,42 @@ restrict_ssh_auth_on_managed () {
 }
 
 
+
+
+update_packages_on_managed () {
+    log_this "update RPM packages on $MANAGED_NODE_FQDN"
+    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo dnf -y update
+}
+
+
 log_this () {
     echo
     echo -n $(date)
     echo "  $1"
 }
 
+
+
 #-------------------------
 # main
 
-# at first, we login using the IPv4 address
-# on control node
-create_control_working_directory
-create_control_rsa_keys  
 # on managed node
+# at first, we login from control using the IPv4 address
 create_managed_working_directory
 trust_managed_host_key_and_ip
 push_rsa_pubkey
 push_passwordless_sudo
 # after some config, we can login using the FQDN
-update_control_hosts_file
 trust_managed_host_key_and_name
 set_managed_hostname
 change_managed_prompt
 root_login_to_managed
 restrict_ssh_auth_on_managed
+# connection work from control node to managed node is done 
+# except for the Ansible user.
+cd $CONTROL_WORK_DIR || exit 1  
+register_managed_with_RH
+setup_git_on_managed
+push_ca_certificate_to_managed
+install_troubleshooting_packages_on_managed
+update_packages_on_managed
