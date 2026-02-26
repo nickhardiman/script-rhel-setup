@@ -168,8 +168,8 @@ reboot_managed () {
 QUIET=1     # 0=silent, 1=noisy
 TEST=1      # 0=safe, 1=dangerous
 SCRIPTS=" \
-  rhel-setup-1-ssh-sudo.sh \
-  rhel-setup-2-os.sh \
+  rhel-setup-1-control-node.sh \
+  rhel-setup-2-managed-node.sh \
   rhel-setup-3-ansible.sh \
   rhel-setup-4-ansible-vault.sh \
   rhel-setup-5-ansible-playbook.sh \
