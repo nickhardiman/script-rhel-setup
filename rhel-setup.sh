@@ -170,9 +170,10 @@ TEST=1      # 0=safe, 1=dangerous
 SCRIPTS=" \
   rhel-setup-1-control-node.sh \
   rhel-setup-2-managed-node.sh \
-  rhel-setup-3-ansible.sh \
-  rhel-setup-4-ansible-vault.sh \
-  rhel-setup-5-ansible-playbook.sh \
+  rhel-setup-3-ansible_on_control.sh \
+  rhel-setup-4-ansible_on_managed.sh \
+  rhel-setup-5-ansible-vault.sh \
+  rhel-setup-6-ansible-playbook-test.sh \
 "
 
 read_cli_options "$@"
