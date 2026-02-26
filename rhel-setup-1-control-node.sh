@@ -61,9 +61,9 @@ change_control_prompt () {
     LINE="PS1='[\u@\H \W]\$ '"      # oldskool
     LINE="PROMPT_USERHOST='\u@\H'"  # newskool
     # for me
-    grep -qxF \"$LINE\" $CONTROL_HOME/.bashrc || echo \"$LINE\" | tee -a $CONTROL_HOME/.bashrc
+    grep -qxF $LINE $CONTROL_HOME/.bashrc || echo $LINE | tee -a $CONTROL_HOME/.bashrc
     # for root
-    sudo grep -qxF \"$LINE\" /root/.bashrc  || echo \"$LINE\" | sudo tee -a /root/.bashrc
+    sudo grep -qxF $LINE /root/.bashrc  || echo $LINE | sudo tee -a /root/.bashrc
 }
 
 
@@ -86,15 +86,15 @@ update_control_hosts_file () {
     grep -qxF "$LINE" /etc/hosts || echo "$LINE" | sudo tee -a /etc/hosts
 }
 
+# Role https://github.com/nickhardiman/ansible-collection-platform/tree/main/roles/server_cert
+# expects to find a CA certificate and matching private key.
+# CA private key, a file on the hypervisor here.
+#   /etc/pki/tls/private/$CA_FQDN-key.pem
+# CA certificate, a file on the hypervisor here.
+#   /etc/pki/ca-trust/source/anchors/$CA_FQDN-cert.pem
+# https://hardiman.consulting/rhel/9/security/id-certificate-ca-certificate.html
 setup_ca_certificate_on_control () {
     log_this "create a CA certificate on control $CONTROL_NODE_NAME"
-    # Role https://github.com/nickhardiman/ansible-collection-platform/tree/main/roles/server_cert
-    # expects to find a CA certificate and matching private key.
-    # CA private key, a file on the hypervisor here.
-    #   /etc/pki/tls/private/$CA_FQDN-key.pem
-    # CA certificate, a file on the hypervisor here.
-    #   /etc/pki/ca-trust/source/anchors/$CA_FQDN-cert.pem
-    # https://hardiman.consulting/rhel/9/security/id-certificate-ca-certificate.html
     if [ -f  "./$CA_FQDN-key.pem" ]; then
         log_this "skipping, found this CA key file: $CA_FQDN-key.pem"
         return 1

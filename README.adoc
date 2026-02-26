@@ -95,7 +95,7 @@ Edit rhel-setup.cfg and change my details to yours.
 Run the script. 
 
 ----
-    bash rhel-setup.sh    
+    bash ./rhel-setup.sh    
 ----
 
 SSH asks you to confirm host key and enter your password. 
