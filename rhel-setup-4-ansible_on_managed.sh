@@ -19,7 +19,7 @@ source $CONFIG_FILE
 
 setup_managed_ansible_user_account() {
     log_this "add an Ansible user account"
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo useradd $MANAGED_ANSIBLE_NAME
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo useradd $MANAGED_ANSIBLE_NAME
 }
 
 
@@ -41,7 +41,7 @@ push_ansible_passwordless_sudo () {
     MANAGED_TMP_FILE=$MANAGED_WORK_DIR/sudoers-$MANAGED_ANSIBLE_NAME
     echo "$MANAGED_ANSIBLE_NAME      ALL=(ALL)       NOPASSWD: ALL" > $CONTROL_TMP_FILE
     scp $CONTROL_TMP_FILE $MANAGED_USER_NAME@$MANAGED_NODE_IP:$MANAGED_TMP_FILE
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo cp $MANAGED_TMP_FILE /etc/sudoers.d/$MANAGED_ANSIBLE_NAME
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo cp $MANAGED_TMP_FILE /etc/sudoers.d/$MANAGED_ANSIBLE_NAME
     # clean up
     # rm $CONTROL_TMP_FILE
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP rm $MANAGED_TMP_FILE

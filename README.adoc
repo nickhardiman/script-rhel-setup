@@ -2,15 +2,20 @@
 
 == Description
 
-Configure a RHEL machine by setting up SSH, sudo, Ansible and other things.
-Run this Bash script on one machine (the control node) to configure another machine (the managed node).
+Configure two new RHEL machines (a control node and a managed node) for development work.
 
 ----
     control node --> managed node
 ----
 
-The control node is probably your local workstation. 
-The managed node is probably a remote machine with a fresh install of the RHEL OS. 
+Both machines are assumed to have fresh installs of the RHEL OS.
+Maybe the control node is local laptop and the managed node is a nearby PC. 
+Or maybe the control node is a jumpbox and the managed node is a VM in a lab.
+
+Set up SSH, sudo, Ansible and other things.
+These scripts make hacking simpler by weakening security.
+Run this Bash script on the control node.
+It uses SSH to get to the other node.
 
 Find the code on Github here. 
   https://github.com/nickhardiman/script-rhel-setup
@@ -19,10 +24,12 @@ Find the code on Github here.
 == Prerequisites
 
 Install RHEL. A minimal install is fine. 
-Set a root password.
-Create a user with admin privileges (in the wheel group).
-Set a user password.
-Find out what IP address your DHCP server assigned to the host.
+
+Set a password for your user and a root password on both machines.
+Give your user admin privileges (in the wheel group) so it can use sudo.
+
+Find out what IP address your DHCP server assigned to the managed node.
+SSH uses this IP to connect. 
 
 == What the script does
 

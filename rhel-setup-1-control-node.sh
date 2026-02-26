@@ -22,6 +22,10 @@ create_control_working_directory () {
     cd $CONTROL_WORK_DIR
 }
 
+passwordless_sudo () {
+    log_this "configure sudo for passwordless privilege escalation here ($CONTROL_USER_NAME@$CONTROL_NODE_NAME)"
+    echo "$CONTROL_USER_NAME      ALL=(ALL)       NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$CONTROL_USER_NAME
+}
 
 # Connect to Red Hat Subscription Management
 # Connect to Red Hat Insights
@@ -119,6 +123,12 @@ setup_ca_certificate_on_control () {
 }
 
 
+update_packages_on_control () {
+    log_this "update RPM packages on $CONTROL_NODE_NAME"
+    sudo dnf -y update
+}
+
+
 log_this () {
     echo
     echo -n $(date)
@@ -129,9 +139,12 @@ log_this () {
 # main
 
 # on control node
+
 change_control_prompt
+passwordless_sudo
 register_control_with_RH
 create_control_working_directory
 create_control_rsa_keys  
 update_control_hosts_file
 setup_ca_certificate_on_control
+update_packages_on_control

@@ -25,7 +25,7 @@ source $CONFIG_FILE
 
 install_troubleshooting_packages_on_managed () {
     log_this "install troubleshooting RPM packages on $MANAGED_NODE_FQDN"
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo dnf -y install \
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo dnf -y install \
             bash-completion \
             bind-utils \
             cockpit \
@@ -44,7 +44,7 @@ install_troubleshooting_packages_on_managed () {
 setup_git_on_managed () {
     log_this "install and configure git on $MANAGED_NODE_FQDN"
     scp $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_HOME/.gitconfig $CONTROL_WORK_DIR/gitconfig-before-$MANAGED_NODE_FQDN
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN << EOF 
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN << EOF 
         sudo dnf install --assumeyes git
         git config --global user.name         "$GIT_NAME"
         git config --global user.email        $GIT_EMAIL
@@ -67,7 +67,7 @@ push_ca_certificate_to_managed () {
     do
         scp ./$CA_FQDN-cert.pem $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-cert.pem
         scp ./$CA_FQDN-key.pem  $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-key.pem
-        ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  << EOF 
+        ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  << EOF 
             sudo cp $MANAGED_WORK_DIR/$CA_FQDN-cert.pem /etc/pki/ca-trust/source/anchors/
             sudo cp $MANAGED_WORK_DIR/$CA_FQDN-key.pem /etc/pki/tls/private/
             sudo chmod 0700  /etc/pki/tls/private/$CA_FQDN-key.pem
@@ -103,7 +103,7 @@ push_passwordless_sudo () {
     MANAGED_TMP_FILE=$MANAGED_WORK_DIR/sudoers-$MANAGED_USER_NAME
     echo "$MANAGED_USER_NAME      ALL=(ALL)       NOPASSWD: ALL" > $CONTROL_TMP_FILE
     scp $CONTROL_TMP_FILE $MANAGED_USER_NAME@$MANAGED_NODE_IP:$MANAGED_TMP_FILE
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo cp $MANAGED_TMP_FILE /etc/sudoers.d/$MANAGED_USER_NAME
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo cp $MANAGED_TMP_FILE /etc/sudoers.d/$MANAGED_USER_NAME
     # clean up
     # rm $CONTROL_TMP_FILE
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP rm $MANAGED_TMP_FILE
@@ -145,7 +145,7 @@ change_managed_prompt () {
     # for me
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "grep -qxF \"$LINE\" $MANAGED_HOME/.bashrc || echo \"$LINE\" | tee -a $MANAGED_HOME/.bashrc"
     # for root
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF \"$LINE\" /root/.bashrc  || echo \"$LINE\" | sudo tee -a /root/.bashrc"
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF \"$LINE\" /root/.bashrc  || echo \"$LINE\" | sudo tee -a /root/.bashrc"
 }
 
 
@@ -164,7 +164,7 @@ create_managed_working_directory () {
 # add root keys so root can log in remotely
 root_login_to_managed () {
     log_this "allow remote root login on $MANAGED_NODE_FQDN"
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo cp $MANAGED_HOME/.ssh/authorized_keys /root/.ssh/authorized_keys
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo cp $MANAGED_HOME/.ssh/authorized_keys /root/.ssh/authorized_keys
 }
 
 
@@ -173,7 +173,7 @@ root_login_to_managed () {
 # For more information, run 'man sshd_config'
 restrict_ssh_auth_on_managed () {
     log_this "restrict SSH authentication to key only on $MANAGED_NODE_FQDN"
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF 'AuthenticationMethods publickey' /etc/ssh/sshd_config  || echo 'AuthenticationMethods publickey' | sudo tee -a /etc/ssh/sshd_config"
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF 'AuthenticationMethods publickey' /etc/ssh/sshd_config  || echo 'AuthenticationMethods publickey' | sudo tee -a /etc/ssh/sshd_config"
 }
 
 
@@ -181,7 +181,7 @@ restrict_ssh_auth_on_managed () {
 
 update_packages_on_managed () {
     log_this "update RPM packages on $MANAGED_NODE_FQDN"
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo dnf -y update
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo dnf -y update
 }
 
 
