@@ -112,27 +112,24 @@ setup_git_on_control () {
 #   fatal: destination path 'libvirt-host' already exists and is not an empty directory.
 #
 clone_my_ansible_collections() {
-    log_this "get my libvirt, OS and app roles, all bundled into a couple collections"
+    log_this "get my collections from Github"
     mkdir -p $CONTROL_HOME/ansible/collections/ansible_collections/nickhardiman/
     pushd    $CONTROL_HOME/ansible/collections/ansible_collections/nickhardiman/
     # !!! when finished, move to requirements.yml 
-    #   - git+https://github.com/nickhardiman/ansible-collection-aap2-refarch
-    # !!! hacked copy of ansible-collection-platform
-    # ansible-collection-aap2-refarch is a temporary copy of ansible-collection-platform
-    # git clone https://github.com/nickhardiman/ansible-collection-platform.git platform
-    git clone https://github.com/nickhardiman/ansible-collection-aap2-refarch.git platform
+    git clone https://github.com/nickhardiman/ansible-collection-platform.git     platform
     git clone https://github.com/nickhardiman/ansible-collection-app.git          app
     git clone https://github.com/nickhardiman/ansible-collection-libvirt.git      libvirt
+    git clone https://github.com/nickhardiman/ansible-collection-vm-gateway       vm_gateway
     popd
 }
 
 
 clone_my_playbooks_to_control() {
-     log_this "get my playbook"
+     log_this "get my playbooks from Github"
      sudo dnf install --assumeyes git
      mkdir -p $CONTROL_HOME/ansible/playbooks/
      pushd    $CONTROL_HOME/ansible/playbooks/
-     git clone https://github.com/nickhardiman/ansible-playbook-aap2-refarch.git aap-refarch
+     git clone https://github.com/nickhardiman/ansible-playbook-aap-lab.git      aap-lab
      git clone https://github.com/nickhardiman/ansible-playbook-rhel-lab.git     rhel-lab
      popd
 }
@@ -152,7 +149,8 @@ dl_from_galaxy_to_control() {
     # Install other collections to ~/.ansible/collections/
     # (https://github.com/nickhardiman/ansible-playbook-build/blob/main/ansible.cfg#L13)
     cd ~/ansible/playbooks/aap-refarch/
-    ansible-galaxy collection install -r collections/requirements.yml 
+    ansible-galaxy collection install -r collections/requirements.yml  \
+        --collections-path /usr/share/ansible/collections
     # Install roles. 
     ansible-galaxy role install -r roles/requirements.yml 
 }

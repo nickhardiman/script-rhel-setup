@@ -57,7 +57,7 @@ add_secrets_to_vault () {
 default_password:        "$DEFAULT_PASSWORD"
 rhsm_user:               "$RHSM_USER"
 rhsm_password:           "$RHSM_PASSWORD"
-user_admin_name:         "$CONTROL_USER_NAME"
+user_admin_name:         "$MANAGED_USER_NAME"
 user_admin_password:     "$DEFAULT_PASSWORD"
 user_admin_public_key:    $USER_ADMIN_PUBLIC_KEY
 user_admin_private_key: |
@@ -84,7 +84,7 @@ satellite_manifest_uuid: "$SATELLITE_MANIFEST_UUID"
 #
 # misc
 site_ip: "$MANAGED_NODE_IP"
-work_dir: $CONTROL_WORK_DIR
+work_dir: $MANAGED_WORK_DIR
 #
 EOF
      # Encrypt the new file. 
