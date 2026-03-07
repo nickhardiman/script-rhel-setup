@@ -70,14 +70,15 @@ change_control_prompt () {
     sudo grep -qxF $LINE /root/.bashrc  || echo $LINE | sudo tee -a /root/.bashrc
 }
 
-
+# run 'man ssh-keygen' and view option 
+#   -t ecdsa | ecdsa-sk | ed25519 | ed25519-sk | rsa
 create_control_rsa_keys () {
     if [[ -f $CONTROL_HOME/.ssh/id_rsa ]]; then
         log_this "RSA private key already exists in control $CONTROL_NODE_NAME $CONTROL_HOME/.ssh/id_rsa"
         return
     fi
     log_this "generate control RSA keys for $CONTROL_USER_NAME"
-     ssh-keygen -f $CONTROL_HOME/.ssh/id_rsa -q -N ""
+     ssh-keygen -t rsa -f $CONTROL_HOME/.ssh/id_rsa -q -N ""
     cat $CONTROL_HOME/.ssh/id_rsa.pub | tee -a $CONTROL_HOME/.ssh/authorized_keys 
 }
 
