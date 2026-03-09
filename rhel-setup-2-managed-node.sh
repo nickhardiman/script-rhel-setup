@@ -184,8 +184,10 @@ restrict_ssh_auth_on_managed () {
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF 'AuthenticationMethods publickey' /etc/ssh/sshd_config  || echo 'AuthenticationMethods publickey' | sudo tee -a /etc/ssh/sshd_config"
 }
 
-
-
+copy_scripts_to_managed () {
+    log_this "copy libvirt_utils to $MANAGED_NODE_FQDN"
+    scp -r libvirt-utils $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR
+}
 
 update_packages_on_managed () {
     log_this "update RPM packages on $MANAGED_NODE_FQDN"
@@ -224,4 +226,5 @@ register_managed_with_RH
 setup_git_on_managed
 push_ca_certificate_to_managed
 install_troubleshooting_packages_on_managed
+copy_scripts_to_managed
 update_packages_on_managed
