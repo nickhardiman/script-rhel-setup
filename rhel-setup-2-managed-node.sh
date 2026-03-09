@@ -149,14 +149,22 @@ change_managed_prompt () {
 }
 
 
-create_managed_working_directory () {
-    log_this "create a working directory $MANAGED_WORK_DIR on managed $MANAGED_NODE_IP"
-    ssh -o ConnectTimeout=10 $MANAGED_USER_NAME@$MANAGED_NODE_IP mkdir -p $MANAGED_WORK_DIR
+check_connection () {
+    log_this "check SSH from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_IP"
+    ssh -o ConnectTimeout=10 $MANAGED_USER_NAME@$MANAGED_NODE_IP id
     if [ $? -ne 0 ]; then
         log_this "error, failed to connect to $MANAGED_NODE_IP. Does config file $CONFIG_FILE have the correct IP address?"
         exit 3
     fi
+}
 
+create_managed_working_directory () {
+    log_this "create a working directory $MANAGED_WORK_DIR on managed $MANAGED_NODE_IP"
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP mkdir -p $MANAGED_WORK_DIR
+    if [ $? -ne 0 ]; then
+        log_this "error, failed to create directory $MANAGED_NODE_IP:$MANAGED_WORK_DIR"
+        exit 4
+    fi
 }
 
 
@@ -198,6 +206,7 @@ log_this () {
 
 # on managed node
 # at first, we login from control using the IPv4 address
+check_connection
 create_managed_working_directory
 trust_managed_host_key_and_ip
 push_rsa_pubkey
