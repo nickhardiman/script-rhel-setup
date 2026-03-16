@@ -164,8 +164,9 @@ dl_from_galaxy_to_control() {
 
 
 log_this () {
+    [[ "$QUIET" -eq 0 ]] && return
     echo
-    echo -n $(date)
+    echo -n $(date) $0
     echo "  $1"
 }
 
