@@ -68,21 +68,24 @@ EOF
 }
 
 
-
+# getting error
+#   Pseudo-terminal will not be allocated because stdin is not a terminal.
+# trying 
+#   -t -t
+#   ssh ... /usr/bin/bash << EOF 
 push_ca_certificate_to_managed () {
     # !!! copy CA certificate from installer host to all hypervisor host and VM trust stores. 
     #  * ca.source.example.com-cert.pem
-    for NAME in host.site1.example.com host.site2.example.com host.site3.example.com
-    do
-        scp ./$CA_FQDN-cert.pem $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-cert.pem
-        scp ./$CA_FQDN-key.pem  $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-key.pem
-        ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  << EOF 
-            sudo cp $MANAGED_WORK_DIR/$CA_FQDN-cert.pem /etc/pki/ca-trust/source/anchors/
-            sudo cp $MANAGED_WORK_DIR/$CA_FQDN-key.pem /etc/pki/tls/private/
-            sudo chmod 0700  /etc/pki/tls/private/$CA_FQDN-key.pem
-            sudo update-ca-trust
+    log_this "copy $CA_FQDN-cert.pem and $CA_FQDN-key.pem to $MANAGED_NODE_FQDN"
+    scp ./$CA_FQDN-cert.pem $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-cert.pem
+    scp ./$CA_FQDN-key.pem  $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-key.pem
+    #
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  /usr/bin/bash << EOF 
+        sudo cp $MANAGED_WORK_DIR/$CA_FQDN-cert.pem /etc/pki/ca-trust/source/anchors/
+        sudo cp $MANAGED_WORK_DIR/$CA_FQDN-key.pem /etc/pki/tls/private/
+        sudo chmod 0700  /etc/pki/tls/private/$CA_FQDN-key.pem
+        sudo update-ca-trust
 EOF
-    done
 }
 
 
@@ -112,7 +115,7 @@ push_passwordless_sudo () {
     MANAGED_TMP_FILE=$MANAGED_WORK_DIR/sudoers-$MANAGED_USER_NAME
     echo "$MANAGED_USER_NAME      ALL=(ALL)       NOPASSWD: ALL" > $CONTROL_TMP_FILE
     scp $CONTROL_TMP_FILE $MANAGED_USER_NAME@$MANAGED_NODE_IP:$MANAGED_TMP_FILE
-    ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo -t cp $MANAGED_TMP_FILE /etc/sudoers.d/$MANAGED_USER_NAME
+    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo cp $MANAGED_TMP_FILE /etc/sudoers.d/$MANAGED_USER_NAME
     # clean up
     # rm $CONTROL_TMP_FILE
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP rm $MANAGED_TMP_FILE
@@ -145,16 +148,18 @@ set_managed_hostname () {
 #   /usr/share/doc/bash-color-prompt/README.md
 #   /etc/profile.d/bash-color-prompt.sh
 change_managed_prompt () {
-    log_this "change PS1 in managed $MANAGED_NODE_FQDN $MANAGED_HOME/.bashrc"
+    log_this "change prompt in managed $MANAGED_NODE_FQDN"
     # get a copy for backup
     scp $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_HOME/.bashrc $CONTROL_WORK_DIR/bashrc-$MANAGED_NODE_FQDN
     # add line if not already there
     LINE="PS1='[\u@\H \W]\$ '"      # oldskool
     LINE="PROMPT_USERHOST='\u@\H'"  # newskool
     # for me
+    log_this "change PS1 in managed $MANAGED_HOME/.bashrc"
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "grep -qxF \"$LINE\" $MANAGED_HOME/.bashrc || echo \"$LINE\" | tee -a $MANAGED_HOME/.bashrc"
     # for root
-    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF \"$LINE\" /root/.bashrc  || echo \"$LINE\" | sudo tee -a /root/.bashrc"
+    log_this "change PS1 in managed $/root/.bashrc"
+   ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF \"$LINE\" /root/.bashrc  || echo \"$LINE\" | sudo tee -a /root/.bashrc"
 }
 
 
@@ -172,7 +177,8 @@ create_managed_working_directory () {
 # SSH - worse security
 # add root keys so root can log in remotely
 root_login_to_managed () {
-    log_this "allow remote root login on $MANAGED_NODE_FQDN"
+    log_this "allow key-based login to root@$MANAGED_NODE_FQDN"
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo cp /root/.ssh/authorized_keys $MANAGED_WORK_DIR/authorized_keys-root
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo cp $MANAGED_HOME/.ssh/authorized_keys /root/.ssh/authorized_keys
 }
 
@@ -193,6 +199,26 @@ copy_scripts_to_managed () {
 update_packages_on_managed () {
     log_this "update RPM packages on $MANAGED_NODE_FQDN"
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo dnf -y update
+}
+
+
+# Connect to Red Hat Subscription Management
+# Connect to Red Hat Insights
+# Activate the Remote Host Configuration daemon
+# Enable console.redhat.com services: remote configuration, insights, remediations, compliance
+register_managed_with_RH () {
+    log_this "check if $MANAGED_NODE_FQDN is already registered with RHSM"
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN sudo subscription-manager status
+    RET_RHSM=$?
+    if [ $RET_RHSM -eq 1 ]
+    then
+        log_this "Register $MANAGED_NODE_FQDN with Red Hat. Use Simple Content Access, no need to attach a subscription."
+        ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  << EOF 
+            sudo rhc disconnect
+            sleep 5
+            sudo rhc connect --username="$RHSM_USER" --password="$RHSM_PASSWORD"
+EOF
+    fi
 }
 
 
