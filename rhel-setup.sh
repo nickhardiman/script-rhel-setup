@@ -181,8 +181,8 @@ set -o errexit -o pipefail
 # Run the scripts
 
 # 0 is true, 1 is false
-QUIET=1     # 0=silent, 1=noisy
-TEST=1      # 0=safe, 1=dangerous
+export QUIET=1     # 0=silent, 1=noisy
+export TEST=1      # 0=safe, 1=dangerous
 SCRIPTS=" \
   rhel-setup-1-control-node.sh \
   rhel-setup-2-managed-node.sh \
