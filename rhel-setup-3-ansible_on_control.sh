@@ -37,7 +37,11 @@ setup_control_ansible_user_account() {
 
 
 setup_control_ansible_user_keys() {
-    log_this "Create a new keypair. Put keys in /home/$CONTROL_ANSIBLE_NAME/.ssh/ and keep copies in /home/nick/.ssh/"
+    log_this "Create a new keypair in /home/$CONTROL_ANSIBLE_NAME/.ssh/"
+    if [[ -f /home/$CONTROL_ANSIBLE_NAME/.ssh/id_rsa ]]; then
+        log_this "RSA private key already exists. $CONTROL_NODE_NAME:/home/$CONTROL_ANSIBLE_NAME/.ssh/id_rsa"
+        return
+    fi
     ssh-keygen -f ./ansible-key -C "$CONTROL_ANSIBLE_NAME@$CONTROL_NODE_NAME" -q -N ""
     mv ansible-key  ansible-key.priv
     # Copy the keys to $CONTROL_ANSIBLE_NAME's SSH config directory. 
@@ -46,13 +50,15 @@ setup_control_ansible_user_keys() {
     sudo cp ansible-key.priv                 /home/$CONTROL_ANSIBLE_NAME/.ssh/id_rsa
     sudo chmod 0600                          /home/$CONTROL_ANSIBLE_NAME/.ssh/id_rsa
     sudo cp ansible-key.pub                  /home/$CONTROL_ANSIBLE_NAME/.ssh/id_rsa.pub
-    sudo cp $CONTROL_HOME/.ssh/known_hosts           /home/$CONTROL_ANSIBLE_NAME/.ssh/known_hosts
+    sudo cp $CONTROL_HOME/.ssh/known_hosts   /home/$CONTROL_ANSIBLE_NAME/.ssh/known_hosts
     sudo chmod 0600                          /home/$CONTROL_ANSIBLE_NAME/.ssh/known_hosts
     sudo chown -R $CONTROL_ANSIBLE_NAME:$CONTROL_ANSIBLE_NAME  /home/$CONTROL_ANSIBLE_NAME/.ssh
+    #
     # Keep a spare set of keys handy. 
     # This location is set in ansible.cfg like this. 
     #   private_key_file = /home/me/.ssh/ansible-key.priv
     # Copy the keys to your SSH config directory. 
+    log_this "Copy $CONTROL_ANSIBLE_NAME keypair to $CONTROL_HOME/.ssh/"
     cp ansible-key.priv  ansible-key.pub  $CONTROL_HOME/.ssh/
     # Clean up.
     # rm ansible-key.priv  ansible-key.pub

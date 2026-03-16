@@ -22,6 +22,15 @@ source $CONFIG_FILE
 
 
 
+check_connection () {
+    log_this "check SSH from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_IP"
+    ssh -o ConnectTimeout=10 $MANAGED_USER_NAME@$MANAGED_NODE_IP id
+    if [ $? -ne 0 ]; then
+        log_this "error, failed to connect to $MANAGED_NODE_IP. Does config file $CONFIG_FILE have the correct IP address?"
+        exit 3
+    fi
+}
+
 
 install_troubleshooting_packages_on_managed () {
     log_this "install troubleshooting RPM packages on $MANAGED_NODE_FQDN"
@@ -93,7 +102,7 @@ trust_managed_host_key_and_ip () {
 # If typing is annoying, see this blog post for an alternative.
 #   https://www.redhat.com/sysadmin/ssh-automation-sshpass
 push_rsa_pubkey () {
-    log_this "copy RSA public key from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_IP for passwordless login"
+    log_this "copy public key from control $CONTROL_NODE_NAME to managed $MANAGED_USER_NAME@$MANAGED_NODE_IP for passwordless login"
     ssh-copy-id $MANAGED_USER_NAME@$MANAGED_NODE_IP
 }
 
@@ -149,14 +158,6 @@ change_managed_prompt () {
 }
 
 
-check_connection () {
-    log_this "check SSH from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_IP"
-    ssh -o ConnectTimeout=10 $MANAGED_USER_NAME@$MANAGED_NODE_IP id
-    if [ $? -ne 0 ]; then
-        log_this "error, failed to connect to $MANAGED_NODE_IP. Does config file $CONFIG_FILE have the correct IP address?"
-        exit 3
-    fi
-}
 
 create_managed_working_directory () {
     log_this "create a working directory $MANAGED_WORK_DIR on managed $MANAGED_NODE_IP"
@@ -196,8 +197,9 @@ update_packages_on_managed () {
 
 
 log_this () {
+    [[ "$QUIET" -eq 0 ]] && return
     echo
-    echo -n $(date)
+    echo -n $(date) $0
     echo "  $1"
 }
 
@@ -209,9 +211,9 @@ log_this () {
 # on managed node
 # at first, we login from control using the IPv4 address
 check_connection
+push_rsa_pubkey
 create_managed_working_directory
 trust_managed_host_key_and_ip
-push_rsa_pubkey
 push_passwordless_sudo
 # after some config, we can login using the FQDN
 trust_managed_host_key_and_name

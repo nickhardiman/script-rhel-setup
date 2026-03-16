@@ -94,7 +94,8 @@ source $CONFIG_FILE
 
 log_this () {
     [[ "$QUIET" -eq 0 ]] && return
-    echo -n $(date)
+    # echo -n $(date)
+    echo -n $(date) $0
     echo "  $1"
 }
 
@@ -168,6 +169,12 @@ reboot_managed () {
 
 #---------
 # Main script starts here
+
+# Run man bash 
+# Look for set under SHELL BUILTIN COMMANDS
+# Exit immediately if one of the scripts exits with a non-zero status.
+set -o errexit -o pipefail
+
 # Set defaults
 # Process command line options
 # Download scripts from Github
@@ -195,6 +202,8 @@ done
 for FILE in $SCRIPTS
 do
     log_this "run $FILE"
+    # bash -o errexit -o pipefail ./$FILE  || exit $?
+    # bash ./$FILE  || exit $?
     bash ./$FILE
 done
 
