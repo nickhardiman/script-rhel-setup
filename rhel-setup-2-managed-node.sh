@@ -7,6 +7,12 @@
 # Find the code on Github here. 
 #   https://github.com/nickhardiman/script-rhel-setup
 #
+# Lots of ssh and sudo here. 
+# use this format
+#   ssh $HOST /usr/bin/bash << EOF 
+# using 'ssh $HOST << EOF'  causes error
+#   Pseudo-terminal will not be allocated because stdin is not a terminal.
+#
 #-------------------------
 # Variables
 #
@@ -42,7 +48,7 @@ ping_fqdn () {
 }
 
 
-connect_to_ip () {
+ssh_to_ip () {
     log_this "check SSH from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_IP"
     ssh \
       -o StrictHostKeyChecking=no \
@@ -131,7 +137,7 @@ install_troubleshooting_packages_on_managed () {
 setup_git_on_managed () {
     log_this "install and configure git on $MANAGED_NODE_FQDN"
     scp $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_HOME/.gitconfig $CONTROL_WORK_DIR/gitconfig-before-$MANAGED_NODE_FQDN
-    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN << EOF 
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN /usr/bin/bash $BASH_FLAG << EOF
         sudo dnf install --assumeyes git
         git config --global user.name         "$GIT_NAME"
         git config --global user.email        $GIT_EMAIL
@@ -146,11 +152,6 @@ EOF
 }
 
 
-# getting error
-#   Pseudo-terminal will not be allocated because stdin is not a terminal.
-# trying 
-#   -t -t
-#   ssh ... /usr/bin/bash << EOF 
 push_ca_certificate_to_managed () {
     # !!! copy CA certificate from installer host to all hypervisor host and VM trust stores. 
     #  * ca.source.example.com-cert.pem
@@ -158,7 +159,7 @@ push_ca_certificate_to_managed () {
     scp ./$CA_FQDN-cert.pem $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-cert.pem
     scp ./$CA_FQDN-key.pem  $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_WORK_DIR/$CA_FQDN-key.pem
     #
-    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  /usr/bin/bash << EOF 
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  /usr/bin/bash << EOF
         sudo cp $MANAGED_WORK_DIR/$CA_FQDN-cert.pem /etc/pki/ca-trust/source/anchors/
         sudo cp $MANAGED_WORK_DIR/$CA_FQDN-key.pem /etc/pki/tls/private/
         sudo chmod 0700  /etc/pki/tls/private/$CA_FQDN-key.pem
@@ -252,7 +253,7 @@ register_managed_with_RH () {
     if [ $RET_RHSM -eq 1 ]
     then
         log_this "Register $MANAGED_NODE_FQDN with Red Hat. Use Simple Content Access, no need to attach a subscription."
-        ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  << EOF 
+        ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  /usr/bin/bash << EOF
             sudo rhc disconnect
             sleep 5
             sudo rhc connect --username="$RHSM_USER" --password="$RHSM_PASSWORD"
@@ -275,7 +276,7 @@ log_this () {
 # on managed node
 # at first, we login from control using the IPv4 address
 ping_ip
-# connect_to_ip
+# ssh_to_ip
 trust_managed_host_key_and_ip
 push_rsa_pubkey
 create_managed_working_directory

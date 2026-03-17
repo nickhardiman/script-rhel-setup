@@ -120,16 +120,8 @@ Or for wordy debugness,
 bash -x ./rhel-setup.sh -v
 ----
 
-SSH asks you to confirm host key and enter your password. 
-
-----
-    This key is not known by any other names.
-    Are you sure you want to continue connecting (yes/no/[fingerprint])? 
-    Warning: Permanently added '1.2.3.4' (ED25519) to the list of known hosts.
-    nick@1.2.3.4's password: 
-----
-
-Type in your user password. 
+The process should be hands-free from here on in. 
+On a good day, SSH and sudo don't ask you to confirm host key or enter a password. 
 
 
 == part of 

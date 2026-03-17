@@ -26,7 +26,7 @@ setup_managed_ansible_user_account() {
 push_ansible_pubkey_to_managed() {
      CONTROL_ANSIBLE_PUBLIC_KEY=$(<$CONTROL_HOME/.ssh/ansible-key.pub)
     log_this "copy $CONTROL_ANSIBLE_NAME public key from here to $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:/home/$MANAGED_ANSIBLE_NAME/.ssh/authorized_keys"
-    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN << EOF
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN  /usr/bin/bash << EOF
             sudo --user=$MANAGED_ANSIBLE_NAME mkdir      /home/$MANAGED_ANSIBLE_NAME/.ssh
             sudo --user=$MANAGED_ANSIBLE_NAME chmod 0700 /home/$MANAGED_ANSIBLE_NAME/.ssh
             sudo --user=$MANAGED_ANSIBLE_NAME touch      /home/$MANAGED_ANSIBLE_NAME/.ssh/authorized_keys

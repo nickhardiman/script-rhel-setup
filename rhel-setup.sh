@@ -152,25 +152,26 @@ download_from_repo() {
     fi
 }
 
-# !!! reboot breaks flow
-reboot_control () {
-    log_this "reboot $CONTROL_NODE_NAME if required"
-    sudo dnf needs-restarting
-    if [ $? -ne 0 ]
-    then
-        sudo systemctl reboot
-    fi
-}
 
 reboot_managed () {
     log_this "reboot $MANAGED_NODE_FQDN if required"
-    ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo dnf needs-restarting
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo dnf --reboothint needs-restarting
     if [ $? -ne 0 ]
     then
         ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo systemctl reboot
     fi
 }
 
+
+# !!! reboot breaks flow
+reboot_control () {
+    log_this "reboot $CONTROL_NODE_NAME if required"
+    sudo dnf --reboothint needs-restarting
+    if [ $? -ne 0 ]
+    then
+        sudo systemctl reboot
+    fi
+}
 
 
 #---------

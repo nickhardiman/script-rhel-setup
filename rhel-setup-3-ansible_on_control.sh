@@ -131,13 +131,13 @@ clone_my_ansible_collections() {
 
 
 clone_my_playbooks_to_control() {
-     log_this "get my playbooks from Github"
-     sudo dnf install --assumeyes git
-     mkdir -p $CONTROL_HOME/ansible/playbooks/
-     pushd    $CONTROL_HOME/ansible/playbooks/
-     git clone https://github.com/nickhardiman/ansible-playbook-aap-lab.git      aap-lab
-     git clone https://github.com/nickhardiman/ansible-playbook-rhel-lab.git     rhel-lab
-     popd
+    log_this "get my playbooks from Github"
+    sudo dnf install --assumeyes git
+    mkdir -p $CONTROL_HOME/ansible/playbooks/
+    pushd    $CONTROL_HOME/ansible/playbooks/
+    git clone https://github.com/nickhardiman/ansible-playbook-aap-lab.git      aap-lab
+    git clone https://github.com/nickhardiman/ansible-playbook-rhel-lab.git     rhel-lab
+    popd
 }
 
 
@@ -154,13 +154,13 @@ dl_from_galaxy_to_control() {
     ls /usr/share/ansible/collections/ansible_collections/community/
     # Install other collections to ~/.ansible/collections/
     # (https://github.com/nickhardiman/ansible-playbook-build/blob/main/ansible.cfg#L13)
-    cd ~/ansible/playbooks/aap-refarch/
+    pushd    $CONTROL_HOME/ansible/playbooks/rhel-lab/
     ansible-galaxy collection install -r collections/requirements.yml  \
         --collections-path /usr/share/ansible/collections
     # Install roles. 
     ansible-galaxy role install -r roles/requirements.yml 
+    popd
 }
-
 
 
 log_this () {
