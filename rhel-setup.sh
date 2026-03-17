@@ -85,19 +85,20 @@
 #-------------------------
 # Variables
 #
-CONFIG_FILE=~/rhel-setup.cfg
+CONFIG_FILE=./rhel-setup.cfg
 source $CONFIG_FILE
 #
 #-------------------------
 # functions
 #
 
+
 log_this () {
     [[ "$QUIET" -eq 0 ]] && return
-    # echo -n $(date)
     echo -n $(date) $0
     echo "  $1"
 }
+
 
 usage() {
     echo "Usage: $0 [-h|-v|-t]"
@@ -116,7 +117,7 @@ usage() {
 
 
 read_cli_options() {
-    while getopts ":hqt" option; do
+    while getopts ":hqtv" option; do
         case $option in
             h) # display help
                 usage
@@ -127,6 +128,11 @@ read_cli_options() {
             t) # test only, do not change anything
                 QUIET=1
                 TEST=0
+                ;;
+            v) # verbose
+                VERBOSE=0
+                BASH_FLAG='-x'
+                VERBOSE_FLAG='-v'
                 ;;
             \?) # Invalid option
                 echo "$0 error:   Invalid option: -$OPTARG" >&2
@@ -170,18 +176,24 @@ reboot_managed () {
 #---------
 # Main script starts here
 
-# Run man bash 
-# Look for set under SHELL BUILTIN COMMANDS
 # Exit immediately if one of the scripts exits with a non-zero status.
-set -o errexit -o pipefail
+# Run man bash 
+# Look for 'set' in section SHELL BUILTIN COMMANDS
+set -o errexit -o nounset -o pipefail
 
 # Set defaults
 # Process command line options
 # Download scripts from Github
 # Run the scripts
 
+
+# -x, trace commands and PS4 prompt
+# Run man bash 
+# Look for 'set' in section SHELL BUILTIN COMMANDS
+export BASH_FLAG=''     
 # 0 is true, 1 is false
-export QUIET=1     # 0=silent, 1=noisy
+export QUIET=1     # 0=silent, 1=not silent
+export VERBOSE=1   # 0=loud, 1=not loud
 export TEST=1      # 0=safe, 1=dangerous
 SCRIPTS=" \
   rhel-setup-1-control-node.sh \
@@ -204,7 +216,7 @@ do
     log_this "run $FILE"
     # bash -o errexit -o pipefail ./$FILE  || exit $?
     # bash ./$FILE  || exit $?
-    bash ./$FILE
+    bash $BASH_FLAG ./$FILE
 done
 
 log_this "setup done"

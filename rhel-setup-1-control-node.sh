@@ -10,7 +10,7 @@
 #-------------------------
 # Variables
 #
-CONFIG_FILE=~/rhel-setup.cfg
+CONFIG_FILE=./rhel-setup.cfg
 source $CONFIG_FILE
 #
 #-------------------------
@@ -23,8 +23,9 @@ create_control_working_directory () {
 }
 
 passwordless_sudo () {
-    log_this "configure sudo for passwordless privilege escalation here ($CONTROL_USER_NAME@$CONTROL_NODE_NAME)"
-    echo "$CONTROL_USER_NAME      ALL=(ALL)       NOPASSWD: ALL" | sudo tee /etc/sudoers.d/$CONTROL_USER_NAME
+    log_this "configure sudo for passwordless privilege escalation on control ($CONTROL_USER_NAME@$CONTROL_NODE_NAME)"
+    echo "$CONTROL_USER_NAME      ALL=(ALL)       NOPASSWD: ALL" \
+      | sudo tee /etc/sudoers.d/$CONTROL_USER_NAME
 }
 
 # Connect to Red Hat Subscription Management
@@ -124,6 +125,12 @@ setup_ca_certificate_on_control () {
 }
 
 
+install_packages_on_control () {
+    log_this "install RPM packages on $CONTROL_NODE_NAME"
+    sudo dnf -y install \
+       sshpass
+}
+
 update_packages_on_control () {
     log_this "update RPM packages on $CONTROL_NODE_NAME"
     sudo dnf -y update
@@ -132,7 +139,6 @@ update_packages_on_control () {
 
 log_this () {
     [[ "$QUIET" -eq 0 ]] && return
-    echo
     echo -n $(date) $0
     echo "  $1"
 }
@@ -149,4 +155,5 @@ create_control_working_directory
 create_control_rsa_keys  
 update_control_hosts_file
 setup_ca_certificate_on_control
+install_packages_on_control
 update_packages_on_control

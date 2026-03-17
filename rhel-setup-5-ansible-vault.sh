@@ -10,7 +10,7 @@
 #-------------------------
 # Variables
 #
-CONFIG_FILE=~/rhel-setup.cfg
+CONFIG_FILE=./rhel-setup.cfg
 source $CONFIG_FILE
 #
 #-------------------------
@@ -92,12 +92,8 @@ EOF
 }
 
 
-
-
-
 log_this () {
     [[ "$QUIET" -eq 0 ]] && return
-    echo
     echo -n $(date) $0
     echo "  $1"
 }

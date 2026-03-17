@@ -10,7 +10,7 @@
 #-------------------------
 # Variables
 #
-CONFIG_FILE=~/rhel-setup.cfg
+CONFIG_FILE=./rhel-setup.cfg
 source $CONFIG_FILE
 #
 #-------------------------
@@ -22,15 +22,93 @@ source $CONFIG_FILE
 
 
 
-check_connection () {
-    log_this "check SSH from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_IP"
-    ssh -o ConnectTimeout=10 $MANAGED_USER_NAME@$MANAGED_NODE_IP id
+ping_ip () {
+    log_this "ping from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_IP"
+    ping $VERBOSE_FLAG -c1 $MANAGED_NODE_IP
     if [ $? -ne 0 ]; then
         log_this "error, failed to connect to $MANAGED_NODE_IP. Does config file $CONFIG_FILE have the correct IP address?"
         exit 3
     fi
 }
 
+
+ping_fqdn () {
+    log_this "ping from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_FQDN"
+    ping $VERBOSE_FLAG -c1 $MANAGED_NODE_FQDN
+    if [ $? -ne 0 ]; then
+        log_this "error, failed to connect to $MANAGED_NODE_FQDN"
+        exit 4
+    fi
+}
+
+
+connect_to_ip () {
+    log_this "check SSH from control $CONTROL_NODE_NAME to managed $MANAGED_NODE_IP"
+    ssh \
+      -o StrictHostKeyChecking=no \
+      -o ConnectTimeout=10 \
+      $MANAGED_USER_NAME@$MANAGED_NODE_IP id
+    if [ $? -ne 0 ]; then
+        log_this "error, failed to connect to $MANAGED_NODE_IP. Does config file $CONFIG_FILE have the correct IP address?"
+        exit 5
+    fi
+}
+
+
+trust_managed_host_key_and_ip () {
+    log_this "copy key from $MANAGED_NODE_IP to control $CONTROL_NODE_NAME $CONTROL_HOME/.ssh/known_hosts file"
+    # backup known_hosts
+    cp $CONTROL_HOME/.ssh/known_hosts $CONTROL_WORK_DIR/known_hosts-control-before-ips
+    # get managed host key
+    LINE=$(ssh-keyscan -t ssh-ed25519 $MANAGED_NODE_IP)
+    # add line if not already there
+    grep -qxF "$LINE" $CONTROL_HOME/.ssh/known_hosts || echo "$LINE" | tee -a $CONTROL_HOME/.ssh/known_hosts
+}
+
+
+# Copy RSA public keys from here to new machinejs for passwordless login.
+# Type in your login password on each host.
+# After this, no login password is required. 
+# If typing is annoying, see this blog post for an alternative.
+#   https://www.redhat.com/sysadmin/ssh-automation-sshpass
+push_rsa_pubkey () {
+    log_this "copy public key from control $CONTROL_NODE_NAME to managed $MANAGED_USER_NAME@$MANAGED_NODE_IP for passwordless login"
+    /usr/bin/sshpass $VERBOSE_FLAG -p "$MANAGED_USER_PASSWORD" \
+      /usr/bin/ssh-copy-id $MANAGED_USER_NAME@$MANAGED_NODE_IP
+}
+
+
+# ------
+# no more SSH password
+
+create_managed_working_directory () {
+    log_this "create a working directory $MANAGED_WORK_DIR on managed $MANAGED_NODE_IP"
+    ssh $VERBOSE_FLAG $MANAGED_USER_NAME@$MANAGED_NODE_IP \
+      mkdir -p $MANAGED_WORK_DIR
+    if [ $? -ne 0 ]; then
+        log_this "error, failed to create directory $MANAGED_NODE_IP:$MANAGED_WORK_DIR"
+        exit 4
+    fi
+}
+
+
+push_passwordless_sudo () {
+    log_this "configure managed $MANAGED_NODE_IP sudo for passwordless privilege escalation"
+    CONTROL_TMP_FILE=$CONTROL_WORK_DIR/sudoers-$MANAGED_USER_NAME
+    MANAGED_TMP_FILE=$MANAGED_WORK_DIR/sudoers-$MANAGED_USER_NAME
+    echo "$MANAGED_USER_NAME      ALL=(ALL)       NOPASSWD: ALL" > $CONTROL_TMP_FILE
+    scp $CONTROL_TMP_FILE $MANAGED_USER_NAME@$MANAGED_NODE_IP:$MANAGED_TMP_FILE
+    ssh $VERBOSE_FLAG $MANAGED_USER_NAME@$MANAGED_NODE_IP /usr/bin/bash $BASH_FLAG << EOF
+      echo "$MANAGED_USER_PASSWORD" | sudo -S cp $MANAGED_TMP_FILE /etc/sudoers.d/$MANAGED_USER_NAME
+EOF
+    # clean up
+    ssh $VERBOSE_FLAG $MANAGED_USER_NAME@$MANAGED_NODE_IP rm $MANAGED_TMP_FILE
+    echo # new line after sudoers prompt
+}
+
+
+# ------
+# no more sudo password
 
 install_troubleshooting_packages_on_managed () {
     log_this "install troubleshooting RPM packages on $MANAGED_NODE_FQDN"
@@ -89,49 +167,20 @@ EOF
 }
 
 
-trust_managed_host_key_and_ip () {
-    log_this "copy key from $MANAGED_NODE_IP to control $CONTROL_NODE_NAME $CONTROL_HOME/.ssh/known_hosts file"
-    # backup known_hosts
-    cp $CONTROL_HOME/.ssh/known_hosts $CONTROL_WORK_DIR/known_hosts-before-ips
-    # get managed host key
-    LINE=$(ssh-keyscan -t ssh-ed25519 $MANAGED_NODE_IP)
-    # add line if not already there
-    grep -qxF "$LINE" $CONTROL_HOME/.ssh/known_hosts || echo "$LINE" | tee -a $CONTROL_HOME/.ssh/known_hosts
-}
 
-# Copy RSA public keys from here to new machinejs for passwordless login.
-# Type in your login password on each host.
-# After this, no login password is required. 
-# If typing is annoying, see this blog post for an alternative.
-#   https://www.redhat.com/sysadmin/ssh-automation-sshpass
-push_rsa_pubkey () {
-    log_this "copy public key from control $CONTROL_NODE_NAME to managed $MANAGED_USER_NAME@$MANAGED_NODE_IP for passwordless login"
-    ssh-copy-id $MANAGED_USER_NAME@$MANAGED_NODE_IP
-}
-
-push_passwordless_sudo () {
-    log_this "configure managed $MANAGED_NODE_IP sudo for passwordless privilege escalation"
-    CONTROL_TMP_FILE=$CONTROL_WORK_DIR/sudoers-$MANAGED_USER_NAME
-    MANAGED_TMP_FILE=$MANAGED_WORK_DIR/sudoers-$MANAGED_USER_NAME
-    echo "$MANAGED_USER_NAME      ALL=(ALL)       NOPASSWD: ALL" > $CONTROL_TMP_FILE
-    scp $CONTROL_TMP_FILE $MANAGED_USER_NAME@$MANAGED_NODE_IP:$MANAGED_TMP_FILE
-    ssh -t $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo cp $MANAGED_TMP_FILE /etc/sudoers.d/$MANAGED_USER_NAME
-    # clean up
-    # rm $CONTROL_TMP_FILE
-    ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP rm $MANAGED_TMP_FILE
-}
-
+# This is a complicated alternative to ssh -o StrictHostKeyChecking=no 
 trust_managed_host_key_and_name () {
-    log_this "copy keys from managed $MANAGED_NODE_FQDN to control $CONTROL_NODE_NAME $CONTROL_HOME/.ssh/known_hosts file"
+    log_this "copy host key from managed $MANAGED_NODE_FQDN to control $CONTROL_NODE_NAME $CONTROL_HOME/.ssh/known_hosts file"
     # get a copy for backup
     cp $CONTROL_HOME/.ssh/known_hosts $CONTROL_WORK_DIR/known_hosts-before-names
     # add line if not already there
-    LINE=$(ssh-keyscan -t ssh-ed25519 $MANAGED_NODE_FQDN)
+    LINE=$(ssh-keyscan $VERBOSE_FLAG -t ssh-ed25519 $MANAGED_NODE_FQDN)
+    [[ "$VERBOSE" -eq 0 ]] && echo $LINE
     grep -qxF "$LINE" $CONTROL_HOME/.ssh/known_hosts || echo "$LINE" | tee -a $CONTROL_HOME/.ssh/known_hosts
 }
 
 set_managed_hostname () {
-    log_this "set host name in $MANAGED_NODE_IP to $MANAGED_NODE_FQDN"
+    log_this "set host name on managed $MANAGED_NODE_IP to $MANAGED_NODE_FQDN"
      ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP sudo hostnamectl set-hostname $MANAGED_NODE_FQDN
 }
 
@@ -148,7 +197,7 @@ set_managed_hostname () {
 #   /usr/share/doc/bash-color-prompt/README.md
 #   /etc/profile.d/bash-color-prompt.sh
 change_managed_prompt () {
-    log_this "change prompt in managed $MANAGED_NODE_FQDN"
+    log_this "change prompt in managed $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_HOME/.bashrc"
     # get a copy for backup
     scp $MANAGED_USER_NAME@$MANAGED_NODE_FQDN:$MANAGED_HOME/.bashrc $CONTROL_WORK_DIR/bashrc-$MANAGED_NODE_FQDN
     # add line if not already there
@@ -159,19 +208,9 @@ change_managed_prompt () {
     ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "grep -qxF \"$LINE\" $MANAGED_HOME/.bashrc || echo \"$LINE\" | tee -a $MANAGED_HOME/.bashrc"
     # for root
     log_this "change PS1 in managed $/root/.bashrc"
-   ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF \"$LINE\" /root/.bashrc  || echo \"$LINE\" | sudo tee -a /root/.bashrc"
+    ssh $MANAGED_USER_NAME@$MANAGED_NODE_FQDN "sudo grep -qxF \"$LINE\" /root/.bashrc  || echo \"$LINE\" | sudo tee -a /root/.bashrc"
 }
 
-
-
-create_managed_working_directory () {
-    log_this "create a working directory $MANAGED_WORK_DIR on managed $MANAGED_NODE_IP"
-    ssh $MANAGED_USER_NAME@$MANAGED_NODE_IP mkdir -p $MANAGED_WORK_DIR
-    if [ $? -ne 0 ]; then
-        log_this "error, failed to create directory $MANAGED_NODE_IP:$MANAGED_WORK_DIR"
-        exit 4
-    fi
-}
 
 
 # SSH - worse security
@@ -224,7 +263,6 @@ EOF
 
 log_this () {
     [[ "$QUIET" -eq 0 ]] && return
-    echo
     echo -n $(date) $0
     echo "  $1"
 }
@@ -236,12 +274,14 @@ log_this () {
 
 # on managed node
 # at first, we login from control using the IPv4 address
-check_connection
+ping_ip
+# connect_to_ip
+trust_managed_host_key_and_ip
 push_rsa_pubkey
 create_managed_working_directory
-trust_managed_host_key_and_ip
 push_passwordless_sudo
 # after some config, we can login using the FQDN
+ping_fqdn
 trust_managed_host_key_and_name
 set_managed_hostname
 change_managed_prompt
