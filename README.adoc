@@ -103,6 +103,9 @@ Edit rhel-setup.cfg and add the right values.
 eg.  Find out what IP addresses your ISP's router assigned to the managed host, 
 and set MANAGED_NODE_IP to this IP adress.
 
+Do not fork https://github.com/nickhardiman/script-rhel-setup then edit the copy. 
+That creates the risk of uploading sensitive values to a public place.
+
 ----
 chmod 600 ./rhel-setup.cfg 
 vim ./rhel-setup.cfg 
